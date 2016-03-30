@@ -25,8 +25,23 @@ RUN nginx -v
 RUN php-fpm -v
 
 
+# Installing DRUSH like they say in official site http://docs.drush.org/en/master/install/
 
-# Edit PHP configuration
+RUN curl http://files.drush.org/drush.phar > /tmp/drush.phar
+
+# Test your install.
+RUN php /tmp/drush.phar core-status
+
+# Rename to `drush` instead of `php drush.phar`. Destination can be anywhere on $PATH. 
+RUN chmod +x /tmp/drush.phar
+RUN mv /tmp/drush.phar /bin/drush
+
+# Optional. Enrich the bash startup file with completion and aliases.
+RUN drush init
+
+
+
+# Edit PHP-FPM configuration
 
 RUN sed -i -e "s/;daemonize\s*=\s*yes/daemonize = no/g" /etc/php/php-fpm.conf
 RUN sed -i -e "s/listen\s*=\s*127.0.0.1:9000/listen = 9000/g" /etc/php/php-fpm.conf

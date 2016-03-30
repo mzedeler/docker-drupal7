@@ -25,6 +25,19 @@ RUN nginx -v
 RUN php-fpm -v
 
 
+#Report errors
+RUN sed -i 's/display_errors = Off/display_errors = On/' /etc/php/php.ini
+
+# Edit PHP-FPM configuration
+RUN sed -i -e "s/;daemonize\s*=\s*yes/daemonize = no/g" /etc/php/php-fpm.conf
+RUN sed -i -e "s/listen\s*=\s*127.0.0.1:9000/listen = 9000/g" /etc/php/php-fpm.conf
+#RUN sed -i "s|memory_limit =.*|memory_limit = ${PHP_MEMORY_LIMIT}|" /etc/php/php.ini
+#RUN sed -i "s|upload_max_filesize =.*|upload_max_filesize = ${MAX_UPLOAD}|" /etc/php/php.ini
+#RUN sed -i "s|max_file_uploads =.*|max_file_uploads = ${PHP_MAX_FILE_UPLOAD}|" /etc/php/php.ini
+#RUN sed -i "s|post_max_size =.*|max_file_uploads = ${PHP_MAX_POST}|" /etc/php/php.ini
+
+RUN sed -i "s/;cgi.fix_pathinfo=1/cgi.fix_pathinfo=0/" /etc/php/php.ini
+
 # Installing DRUSH like they say in official site http://docs.drush.org/en/master/install/
 
 RUN curl http://files.drush.org/drush.phar > /tmp/drush.phar
@@ -39,31 +52,18 @@ RUN mv /tmp/drush.phar /bin/drush
 # Optional. Enrich the bash startup file with completion and aliases.
 RUN drush init
 
-
-# Edit PHP-FPM configuration
-
-RUN sed -i -e "s/;daemonize\s*=\s*yes/daemonize = no/g" /etc/php/php-fpm.conf
-RUN sed -i -e "s/listen\s*=\s*127.0.0.1:9000/listen = 9000/g" /etc/php/php-fpm.conf
-
-#RUN sed -i "s|memory_limit =.*|memory_limit = ${PHP_MEMORY_LIMIT}|" /etc/php/php.ini
-#RUN sed -i "s|upload_max_filesize =.*|upload_max_filesize = ${MAX_UPLOAD}|" /etc/php/php.ini
-#RUN sed -i "s|max_file_uploads =.*|max_file_uploads = ${PHP_MAX_FILE_UPLOAD}|" /etc/php/php.ini
-#RUN sed -i "s|post_max_size =.*|max_file_uploads = ${PHP_MAX_POST}|" /etc/php/php.ini
-
-RUN sed -i "s/;cgi.fix_pathinfo=1/cgi.fix_pathinfo=0/" /etc/php/php.ini
-
 # Set permissions for server directory
 RUN chown -R nginx:www-data /var/lib/nginx
 
 # Clear old nginx config
 RUN rm -rf /etc/nginx
 
-# Download NGINX config
+# Download NGINX config from github
 RUN git clone https://github.com/perusio/drupal-with-nginx.git /etc/nginx
 RUN cd /etc/nginx && git checkout D7
 
 # Load OUR custom NGINX config if present
-ADD  sites-available/default.conf /etc/nginx/sites-available
+ADD sites-available/default.conf /etc/nginx/sites-available
 
 # Set sane permissions for  NGINX config
 RUN chown root:root /etc/nginx -R -v
@@ -82,7 +82,7 @@ RUN chmod 777 /var/cache/nginx/microcache
 #Making it output log to stderr
 RUN sed -i -e "s/error_log/#error_log/g" /etc/nginx/nginx.conf
 
-RUN echo "error_log /dev/stderr;" /etc/nginx/nginx.conf
+RUN echo "error_log /dev/stderr;" >> /etc/nginx/nginx.conf
 
 # Test the nginx configuration
 RUN nginx -t

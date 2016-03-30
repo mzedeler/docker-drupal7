@@ -40,7 +40,6 @@ RUN mv /tmp/drush.phar /bin/drush
 RUN drush init
 
 
-
 # Edit PHP-FPM configuration
 
 RUN sed -i -e "s/;daemonize\s*=\s*yes/daemonize = no/g" /etc/php/php-fpm.conf
@@ -60,15 +59,30 @@ RUN chown -R nginx:www-data /var/lib/nginx
 RUN rm -rf /etc/nginx
 
 # Download NGINX config
-#RUN git clone https://github.com/perusio/drupal-with-nginx.git /etc/nginx
-#RUN cd /etc/nginx && git checkout D7
+RUN git clone https://github.com/perusio/drupal-with-nginx.git /etc/nginx
+RUN cd /etc/nginx && git checkout D7
 
 # Load OUR custom NGINX config if present
-ADD /etc/nginx /etc/nginx
+ADD  sites-available/default.conf /etc/nginx/sites-available
 
 # Set sane permissions for  NGINX config
 RUN chown root:root /etc/nginx -R -v
 
+# Set nginx user to the one being used by alpine linux
+#RUN user www-data;
+RUN sed -i -e "s/www\s*-data/nginx/g" /etc/nginx/nginx.conf
+
+#Fix nginx config to work on alpine linux
+RUN sed -i -e "s/set_real_ip_from/#set_real_ip_from/g" /etc/nginx/nginx.conf
+RUN sed -i -e "s/real_ip_header/#real_ip_header/g" /etc/nginx/nginx.conf
+RUN sed -i -e "s/upload_progress/#upload_progress/g" /etc/nginx/nginx.conf
+RUN mkdir -p /var/cache/nginx/microcache
+RUN chmod 777 /var/cache/nginx/microcache
+
+#Making it output log to stderr
+RUN sed -i -e "s/error_log/#error_log/g" /etc/nginx/nginx.conf
+
+RUN echo "error_log /dev/stderr;" /etc/nginx/nginx.conf
 
 # Test the nginx configuration
 RUN nginx -t
@@ -81,6 +95,15 @@ RUN nginx -t
 
 RUN cd /var/tmp && curl https://ftp.drupal.org/files/projects/drupal-7.43.tar.gz | tar xvz
 RUN mv /var/tmp/drupal-7.43/* /var/www/localhost/htdocs && rm -rf /var/tmp/drupal-7.43
+
+# Inject our configuration script
+ADD settings.php /var/www/localhost/htdocs/sites/default/
+RUN chmod 0777 /var/www/localhost/htdocs/sites/default/settings.php
+
+# Create directory for uploading files
+RUN mkdir -p /var/www/localhost/htdocs/sites/default/files
+# TODO export volume with this directory?
+RUN chmod 777 -R /var/www/localhost/htdocs/sites/default/files
 
 # Set ownership on drupal code
 RUN chown -R -v nginx:www-data /var/www

@@ -1,3 +1,4 @@
 #!/bin/sh
 
-echo "Restore"
+rm -rf /var/www/*
+tar -xzvf - -C /var/www

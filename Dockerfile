@@ -13,16 +13,29 @@ RUN apk add --update \
 	git \
 	php-mcrypt php-soap php-openssl php-gmp php-pdo_odbc php-json php-dom php-pdo php-zip php-mysql \
 	php-sqlite3 php-apcu php-bcmath php-gd php-xcache php-odbc php-pdo_mysql php-pdo_sqlite \
-	php-gettext php-xmlreader php-xmlrpc php-bz2 php-memcache php-mssql php-iconv php-pdo_dblib php-curl php-ctype php-fpm && rm -rf /var/cache/apk/*
+	php-gettext php-xmlreader php-xmlrpc php-bz2 php-memcache php-iconv php-pdo_dblib php-curl php-ctype php-fpm && rm -rf /var/cache/apk/*
+
+# Show PHP version being used
+RUN php -v
+
+# Show nginx version being used
+RUN nginx -v
+
+# Show php-fpm version being used
+RUN php-fpm -v
+
+
 
 # Edit PHP configuration
 
 RUN sed -i -e "s/;daemonize\s*=\s*yes/daemonize = no/g" /etc/php/php-fpm.conf
 RUN sed -i -e "s/listen\s*=\s*127.0.0.1:9000/listen = 9000/g" /etc/php/php-fpm.conf
-RUN sed -i "s|memory_limit =.*|memory_limit = ${PHP_MEMORY_LIMIT}|" /etc/php/php.ini
-RUN sed -i "s|upload_max_filesize =.*|upload_max_filesize = ${MAX_UPLOAD}|" /etc/php/php.ini
-RUN sed -i "s|max_file_uploads =.*|max_file_uploads = ${PHP_MAX_FILE_UPLOAD}|" /etc/php/php.ini
-RUN sed -i "s|post_max_size =.*|max_file_uploads = ${PHP_MAX_POST}|" /etc/php/php.ini
+
+#RUN sed -i "s|memory_limit =.*|memory_limit = ${PHP_MEMORY_LIMIT}|" /etc/php/php.ini
+#RUN sed -i "s|upload_max_filesize =.*|upload_max_filesize = ${MAX_UPLOAD}|" /etc/php/php.ini
+#RUN sed -i "s|max_file_uploads =.*|max_file_uploads = ${PHP_MAX_FILE_UPLOAD}|" /etc/php/php.ini
+#RUN sed -i "s|post_max_size =.*|max_file_uploads = ${PHP_MAX_POST}|" /etc/php/php.ini
+
 RUN sed -i "s/;cgi.fix_pathinfo=1/cgi.fix_pathinfo=0/" /etc/php/php.ini
 
 # Set permissions for server directory
@@ -32,15 +45,18 @@ RUN chown -R nginx:www-data /var/lib/nginx
 RUN rm -rf /etc/nginx
 
 # Download NGINX config
-RUN git clone https://github.com/perusio/drupal-with-nginx.git /etc/nginx
-RUN cd /etc/nginx && git checkout D7
+#RUN git clone https://github.com/perusio/drupal-with-nginx.git /etc/nginx
+#RUN cd /etc/nginx && git checkout D7
 
-
-# Load custom NGINX config if present
+# Load OUR custom NGINX config if present
 ADD /etc/nginx /etc/nginx
 
 # Set sane permissions for  NGINX config
 RUN chown root:root /etc/nginx -R -v
+
+
+# Test the nginx configuration
+RUN nginx -t
 
 # Create directory for drupal code
 #RUN mkdir /var/www
@@ -58,7 +74,20 @@ RUN chown -R -v nginx:www-data /var/www
 
 # Add backup script
 ADD backup /usr/bin
+
+# Add restore script
 ADD restore /usr/bin
 
-# Expose the ports for nginx
-EXPOSE 80 443 9000
+# Add run script
+ADD start /bin/start
+
+
+# Expose the ports for nginx http
+EXPOSE 80
+
+# Expose the port for nginx https
+EXPOSE 443
+
+
+# Run entry point script, that starts both php-fpm and nginx at foreground
+CMD ["/bin/start"]

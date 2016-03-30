@@ -47,7 +47,9 @@ RUN chown root:root /etc/nginx -R -v
 
 # Load the drupal7 code into /var/www
 # http://www.howtogeek.com/howto/uncategorized/linux-quicktip-downloading-and-un-tarring-in-one-step/
-RUN cd /var/www && curl https://ftp.drupal.org/files/projects/drupal-7.43.tar.gz | tar xvz
+
+RUN cd /var/tmp && curl https://ftp.drupal.org/files/projects/drupal-7.43.tar.gz | tar xvz
+RUN mv /var/tmp/drupal-7.43/* /var/www/localhost/htdocs && rm -rf /var/tmp/drupal-7.43
 
 # Set ownership on drupal code
 RUN chown -R -v nginx:www-data /var/www
@@ -59,4 +61,4 @@ ADD backup /usr/bin
 ADD restore /usr/bin
 
 # Expose the ports for nginx
-EXPOSE 80 443
+EXPOSE 80 443 9000

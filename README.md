@@ -20,23 +20,33 @@ This values are loaded from process environment and can be used to configure app
 
 Set timezone
 
-`TIMEZONE` `Europe/Moscow`
+- `TIMEZONE` `Europe/Moscow`
 
-Set database configuration
-`MYSQL_HOST` `mysql`
-`MYSQL_PORT` `3306`
-`MYSQL_USER` `admin`
-`MYSQL_DATABASE` `nota_dk`
-`MYSQL_PASSWORD` `admin`
+Set database configuration:
+
+- `MYSQL_HOST` `mysql`
+
+- `MYSQL_PORT` `3306`
+
+- `MYSQL_USER` `admin`
+
+- `MYSQL_DATABASE` `nota_dk`
+
+- `MYSQL_PASSWORD` `admin`
 
 Set site name
-`SITENAME` `my-site.com`
+
+- `SITENAME` `my-site.com`
 
 Set PHP configuration parameters
-`PHP_MEMORY_LIMIT` `512M`
-`MAX_UPLOAD` `50M`
-`PHP_MAX_FILE_UPLOAD` `200`
-`PHP_MAX_POST` `100M`
+
+- `PHP_MEMORY_LIMIT` `512M`
+
+- `MAX_UPLOAD` `50M`
+
+- `PHP_MAX_FILE_UPLOAD` `200`
+
+- `PHP_MAX_POST` `100M`
 
 
 

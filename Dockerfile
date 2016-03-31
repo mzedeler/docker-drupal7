@@ -7,6 +7,25 @@ FROM smebberson/alpine-base:1.2.0
 # from https://github.com/matriphe/docker-alpine-php/blob/master/5.6/FPM/Dockerfile
 # from https://github.com/perusio/drupal-with-nginx
 
+# Set timezone
+ENV TIMEZONE Europe/Moscow
+
+# Set database configuration
+ENV MYSQL_HOST mysql
+ENV MYSQL_PORT 3306
+ENV MYSQL_USER admin
+ENV MYSQL_DATABASE nota_dk
+ENV MYSQL_PASSWORD admin
+
+# Set site name
+ENV SITENAME my-site.com
+
+# Set PHP configuration parameters
+ENV PHP_MEMORY_LIMIT 512M
+ENV MAX_UPLOAD 50M
+ENV PHP_MAX_FILE_UPLOAD 200
+ENV PHP_MAX_POST 100M
+
 # Install nginx
 RUN apk add --update \
 	nginx \
@@ -14,6 +33,9 @@ RUN apk add --update \
 	php-mcrypt php-soap php-openssl php-gmp php-pdo_odbc php-json php-dom php-pdo php-zip php-mysql \
 	php-sqlite3 php-apcu php-bcmath php-gd php-xcache php-odbc php-pdo_mysql php-pdo_sqlite php-phar \
 	php-gettext php-xmlreader php-xmlrpc php-bz2 php-memcache php-iconv php-pdo_dblib php-curl php-ctype php-fpm && rm -rf /var/cache/apk/*
+
+# Set timezone
+RUN echo "${TIMEZONE}" > /etc/timezone
 
 # Show PHP version being used
 RUN php -v
@@ -34,10 +56,10 @@ RUN php /tmp/test.php
 # Edit PHP-FPM configuration
 RUN sed -i -e "s/;daemonize\s*=\s*yes/daemonize = no/g" /etc/php/php-fpm.conf
 RUN sed -i -e "s/listen\s*=\s*127.0.0.1:9000/listen = 9000/g" /etc/php/php-fpm.conf
-#RUN sed -i "s|memory_limit =.*|memory_limit = ${PHP_MEMORY_LIMIT}|" /etc/php/php.ini
-#RUN sed -i "s|upload_max_filesize =.*|upload_max_filesize = ${MAX_UPLOAD}|" /etc/php/php.ini
-#RUN sed -i "s|max_file_uploads =.*|max_file_uploads = ${PHP_MAX_FILE_UPLOAD}|" /etc/php/php.ini
-#RUN sed -i "s|post_max_size =.*|max_file_uploads = ${PHP_MAX_POST}|" /etc/php/php.ini
+RUN sed -i "s|memory_limit =.*|memory_limit = ${PHP_MEMORY_LIMIT}|" /etc/php/php.ini
+RUN sed -i "s|upload_max_filesize =.*|upload_max_filesize = ${MAX_UPLOAD}|" /etc/php/php.ini
+RUN sed -i "s|max_file_uploads =.*|max_file_uploads = ${PHP_MAX_FILE_UPLOAD}|" /etc/php/php.ini
+RUN sed -i "s|post_max_size =.*|max_file_uploads = ${PHP_MAX_POST}|" /etc/php/php.ini
 
 RUN sed -i "s/;cgi.fix_pathinfo=1/cgi.fix_pathinfo=0/" /etc/php/php.ini
 
@@ -122,9 +144,12 @@ RUN chown -R -v nginx:www-data /var/www
 
 # Generate config file for drupal
 
-
-
-
+RUN cd /var/www/localhost/htdocs && drush site-install standard \
+    --site-name="${SITENAME}" \
+    --account-name=admin \
+    --account-pass=admin \
+    --db-url=mysql://"${MYSQL_USER}":"${MYSQL_PASSWORD}"@"${MYSQL_HOST}":"${MYSQL_PORT}"/"${MYSQL_DATABASE}" \
+    --yes
 
 # Add custom scripts
 

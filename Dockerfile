@@ -52,8 +52,8 @@ RUN php /tmp/drush.phar core-status
 RUN chmod +x /tmp/drush.phar
 RUN mv /tmp/drush.phar /bin/drush
 
-# Optional. Enrich the bash startup file with completion and aliases.
-RUN drush init
+# Optional. Enrich the bash startup file with completion and aliases. It fails in docker
+# RUN drush init
 
 # Set permissions for server directory
 RUN chown -R nginx:www-data /var/lib/nginx

@@ -24,9 +24,15 @@ RUN nginx -v
 # Show php-fpm version being used
 RUN php-fpm -v
 
-
-#Report errors
+#Report errors for php
 RUN sed -i 's/display_errors = Off/display_errors = On/' /etc/php/php.ini
+
+# Self test PHP CLI
+RUN touch /tmp/test.php
+RUN echo "<?php" > /tmp/test.php
+RUN echo "\n echo('PHP-CLI WORKS!');" > /tmp/test.php
+RUN php /tmp/test.php
+
 
 # Edit PHP-FPM configuration
 RUN sed -i -e "s/;daemonize\s*=\s*yes/daemonize = no/g" /etc/php/php-fpm.conf
@@ -63,13 +69,15 @@ RUN git clone https://github.com/perusio/drupal-with-nginx.git /etc/nginx
 RUN cd /etc/nginx && git checkout D7
 
 # Load OUR custom NGINX config if present
-ADD sites-available/default.conf /etc/nginx/sites-available
+ADD sites-available/ /etc/nginx/sites-available
+
+# Load OUR certificates
+ADD ssl /etc/nginx/ssl
 
 # Set sane permissions for  NGINX config
 RUN chown root:root /etc/nginx -R -v
 
 # Set nginx user to the one being used by alpine linux
-#RUN user www-data;
 RUN sed -i -e "s/www\s*-data/nginx/g" /etc/nginx/nginx.conf
 
 #Fix nginx config to work on alpine linux

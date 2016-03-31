@@ -4,4 +4,4 @@ echo "Starting PHP-FPM as daemon"
 php-fpm -D
 
 echo "Starting nginx in foreground"
-nginx -g "daemon off; error_log /dev/stderr; access_log /dev/stdout"
+nginx -g "daemon off; error_log /dev/stderr; access_log /dev/stdout; user nginx;"

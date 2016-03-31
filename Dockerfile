@@ -65,11 +65,18 @@ RUN rm -rf /etc/nginx
 RUN git clone https://github.com/perusio/drupal-with-nginx.git /etc/nginx
 RUN cd /etc/nginx && git checkout D7
 
+# Clean examples for available sites
+RUN rm -f /etc/nginx/sites-available/000-default /etc/nginx/sites-available/example.com.conf
+
 # Load OUR custom NGINX config if present
+
 ADD sites-available/ /etc/nginx/sites-available
 
 # Load OUR certificates
 ADD ssl /etc/nginx/ssl
+
+# Enable all our sites
+RUN ln -s /etc/nginx/sites-available /etc/nginx/sites-enabled
 
 # Set sane permissions for  NGINX config
 RUN chown root:root /etc/nginx -R -v

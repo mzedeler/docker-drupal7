@@ -110,6 +110,12 @@ RUN chown -R -v nginx:www-data /var/www
 
 # Generate config file for drupal
 
+
+
+
+
+# Add custom scripts
+
 # Add backup script
 ADD backup /usr/bin
 
@@ -119,13 +125,8 @@ ADD restore /usr/bin
 # Add run script
 ADD start /bin/start
 
-
 # Expose the ports for nginx http
-EXPOSE 80
-
-# Expose the port for nginx https
-EXPOSE 443
-
+EXPOSE 80 443
 
 # Run entry point script, that starts both php-fpm and nginx at foreground
 CMD ["/bin/start"]

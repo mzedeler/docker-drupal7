@@ -28,11 +28,8 @@ RUN php-fpm -v
 RUN sed -i 's/display_errors = Off/display_errors = On/' /etc/php/php.ini
 
 # Self test PHP CLI
-RUN touch /tmp/test.php
-RUN echo "<?php" > /tmp/test.php
-RUN echo "\n echo('PHP-CLI WORKS!');" > /tmp/test.php
+ADD test.php /tmp/test.php
 RUN php /tmp/test.php
-
 
 # Edit PHP-FPM configuration
 RUN sed -i -e "s/;daemonize\s*=\s*yes/daemonize = no/g" /etc/php/php-fpm.conf

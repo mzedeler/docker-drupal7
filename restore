@@ -1,4 +1,3 @@
 #!/bin/sh
 
-rm -rf /var/www/*
-tar -xzvf - -C /var/www
+tar -xjf - -C /var/www

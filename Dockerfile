@@ -26,6 +26,10 @@ ENV MAX_UPLOAD 50M
 ENV PHP_MAX_FILE_UPLOAD 200
 ENV PHP_MAX_POST 100M
 
+# Set Memcached memory limit
+ENV MEMCACHED_MEM_LIMIT 128
+
+
 # Install nginx
 RUN apk add --update \
 	nginx \
@@ -75,9 +79,6 @@ RUN php /tmp/drush.phar core-status
 RUN chmod +x /tmp/drush.phar
 RUN mv /tmp/drush.phar /bin/drush
 
-# Optional. Enrich the bash startup file with completion and aliases. It fails in docker
-# RUN drush init
-
 # Set permissions for server directory
 RUN chown -R nginx:www-data /var/lib/nginx
 
@@ -122,46 +123,25 @@ RUN echo "error_log /dev/stderr;" >> /etc/nginx/nginx.conf
 # Test the nginx configuration
 RUN nginx -t
 
-# Create directory for drupal code
-#RUN mkdir /var/www
+# Create directory root for webserver
+RUN mkdir -p /var/www/localhost/htdocs
 
-# Load the drupal7 code into /var/www
-# http://www.howtogeek.com/howto/uncategorized/linux-quicktip-downloading-and-un-tarring-in-one-step/
-
-RUN cd /var/tmp && curl https://ftp.drupal.org/files/projects/drupal-7.43.tar.gz | tar xvz
-RUN mv /var/tmp/drupal-7.43/* /var/www/localhost/htdocs && rm -rf /var/tmp/drupal-7.43
-
-# Inject our configuration script
-ADD settings.php /var/www/localhost/htdocs/sites/default/
-RUN chmod 0777 /var/www/localhost/htdocs/sites/default/settings.php
-
-# Create directory for uploading files
-RUN mkdir -p /var/www/localhost/htdocs/sites/default/files
-# TODO export volume with this directory?
-RUN chmod 777 -R /var/www/localhost/htdocs/sites/default/files
+#Add placeholder files to root for webserver
+ADD www/* /var/www/localhost/htdocs
 
 # Set ownership on drupal code
 RUN chown -R -v nginx:www-data /var/www
+#RUN chmod 777 -R /var/www/localhost/htdocs
 
-# Generate config file for drupal
-
-RUN cd /var/www/localhost/htdocs && drush site-install standard \
-    --site-name="${SITENAME}" \
-    --account-name=admin \
-    --account-pass=admin \
-    --db-url=mysql://"${MYSQL_USER}":"${MYSQL_PASSWORD}"@"${MYSQL_HOST}":"${MYSQL_PORT}"/"${MYSQL_DATABASE}" \
-    --yes
-
-# Add custom scripts
 
 # Add backup script
-ADD backup /usr/bin
+ADD bin/backup /usr/bin
 
 # Add restore script
-ADD restore /usr/bin
+ADD bin/restore /usr/bin
 
 # Add run script
-ADD start /bin/start
+ADD bin/start /bin/start
 
 # Expose the ports for nginx http
 EXPOSE 80 443

@@ -5,7 +5,7 @@ php-fpm -D
 echo "PHP-FPM started as daemon!"
 
 echo "Starting Memcached as daemon..."
-memcached -d -m 128 -p 11211 -u nobody -l 127.0.0.1
+memcached -d -m "${MEMCACHED_MEM_LIMIT}" -p 11211 -u nobody -l 127.0.0.1
 echo "Memcached started as daemon!"
 
 echo "Starting nginx in foreground"

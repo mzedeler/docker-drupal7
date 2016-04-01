@@ -58,12 +58,28 @@ Upload your SSL certificates to `ssl/` folder, that are used by your site `.conf
 
 
 
+This container has this:
+
+- nginx running on 0.0.0.0:80, 0.0.0.0:443 ports
+
+- PHP-FPM running on 127.0.0.1:9000 port
+
+- memcached running on 127.0.0.1:11211 port
+
+- drupal files saved in `/var/www/localhost/htdocs`
+
+- script to backup data
+
+- script to restore data
+
+
+
 Starting container
 ====================================
 
 Under construction - not the final way of starting it;
 
-Firstly, we need to start the database container
+***We need to start the database container***
 
 ```
 
@@ -93,40 +109,53 @@ You need to create user `admin` with password `admin` and database of name of `n
 SELECT,INSERT,UPDATE,DELETE,CREATE,DROP,INDEX,ALTER permissions on it from any host.
 I used mysql workbench for doing this.
 
-Than you need to set database host on Dockerfile - i know, this is wierd, but it is required step, because 
-the build script requires the drush to be started to populate database with initial values.
 
-So, we need to set the 
+***Create a data volume container***
+
+See https://docs.docker.com/engine/userguide/containers/dockervolumes/
+
+
+```
+	
+	# docker create -v /var/www --name drupal-data alpine:latest /bin/true
 
 ```
 
-    ENV MYSQL_HOST 172.17.0.2
-
-```
-here https://github.com/vodolaz095/docker-drupal7/blob/master/Dockerfile#L14 in the dockerfile
-
-
-Than you can try to build the container
+***Build current container ***
 
 ```
 
-    # docker -t docker-drupal7 build .
+	# docker build -t drupal7 .
 
 ```
 
-This container has this:
+***Now spin up the drupal7 container***
 
-- nginx running on 0.0.0.0:80, 0.0.0.0:443 ports
+```
 
-- PHP-FPM running on 127.0.0.1:9000 port
+	# docker run -d --volumes-from drupal-data -l mariadb-percona:mysql --name drupal7 solfisk/drupal7
 
-- memcached running on 127.0.0.1:11211 port
+```
 
-- drupal files saved in `/var/www/localhost/htdocs`
+***Download drupal core***
 
-- script to backup data
+```
 
-- script to restore data
+	# docker exec -ti drupal7 drush dl --destination /var/www/localhost/htdocs drupal-7.x
+
+```
+
+***Set up a site***
+
+````
+
+ 	# docker exec -w /var/www/localhost/htdocs drush site-install standard --site-name=my-site.com \
+    --account-name=admin \
+    --account-pass=admin \
+    --db-url=mysql://admin:admin@mysql:3306/my-site
+
+````
+
 
 Info
 ====================================

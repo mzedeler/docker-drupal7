@@ -110,7 +110,7 @@ See https://docs.docker.com/engine/userguide/containers/dockervolumes/
 
 ```
 
-	# docker build -t drupal7 .
+	# docker build -t solfisk/drupal7 .
 
 ```
 
@@ -118,7 +118,7 @@ See https://docs.docker.com/engine/userguide/containers/dockervolumes/
 
 ```
 
-	# docker run -d --volumes-from drupal-data -l mariadb-percona:mysql --name drupal7 solfisk/drupal7
+	# docker run --volumes-from drupal-data -l mariadb-percona:mysql --name drupal7 solfisk/drupal7
 
 ```
 

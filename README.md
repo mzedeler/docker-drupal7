@@ -58,21 +58,6 @@ Upload your SSL certificates to `ssl/` folder, that are used by your site `.conf
 
 
 
-This container has this:
-
-- nginx running on 0.0.0.0:80, 0.0.0.0:443 ports
-
-- PHP-FPM running on 127.0.0.1:9000 port
-
-- memcached running on 127.0.0.1:11211 port
-
-- drupal files saved in `/var/www/localhost/htdocs`
-
-- script to backup data
-
-- script to restore data
-
-
 
 Starting container
 ====================================
@@ -137,7 +122,26 @@ See https://docs.docker.com/engine/userguide/containers/dockervolumes/
 
 ```
 
+Verify, that container works - it have to show php_info on http://172.22.0.4/ and http://172.22.0.4/robots.txt
+
+This container has this:
+
+- nginx running on 0.0.0.0:80, 0.0.0.0:443 ports
+
+- PHP-FPM running on 127.0.0.1:9000 port
+
+- memcached running on 127.0.0.1:11211 port
+
+- drupal files saved in `/var/www/localhost/htdocs`
+
+- script to backup data
+
+- script to restore data
+
+
 ***Download drupal core***
+
+Execute this script to download drupal-7 from official repo using drush
 
 ```
 

@@ -123,11 +123,14 @@ RUN echo "error_log /dev/stderr;" >> /etc/nginx/nginx.conf
 # Test the nginx configuration
 RUN nginx -t
 
+# Export volume
+VOLUME /var/www
+
 # Create directory root for webserver
 RUN mkdir -p /var/www/localhost/htdocs
 
 #Add placeholder files to root for webserver
-ADD www/* /var/www/localhost/htdocs
+ADD www/* /var/www/localhost/htdocs/
 
 # Set ownership on drupal code
 RUN chown -R -v nginx:www-data /var/www

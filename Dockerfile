@@ -136,14 +136,8 @@ RUN chmod 775 -R /var/www
 # Export volume and populate it with data after mount
 VOLUME /var/www
 
-# Add backup script
-ADD bin/backup /usr/bin
-
-# Add restore script
-ADD bin/restore /usr/bin
-
-# Add run script
-ADD bin/start /bin/start
+# Add custom scripts
+ADD bin/ /usr/bin
 
 # Expose the ports for nginx http
 EXPOSE 80 443

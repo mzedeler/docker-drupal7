@@ -1,0 +1,62 @@
+#!/bin/sh
+
+set -e
+
+if [ -z ${1} ]
+then
+     echo "Usage - createSite [sitename]"
+     exit 1
+fi
+
+SITENAME=${1}
+
+if [-a "/etc/nginx/sites-available/${SITENAME}.conf"]
+then
+    echo "Unable create config for site ${SITENAME}. It is already defined!"
+    exit 1
+else
+    echo "Creating site $SITENAME...."
+
+    echo "Making directory"
+    mkdir -p "/var/www/${SITENAME}"
+
+    echo "Setting directory ownership..."
+    chown nginx:www-data "/var/www/${SITENAME}" -rv
+
+    echo "Making config in /etc/nginx/sites-available"
+
+    {
+	echo "server {"
+	echo "    listen  0.0.0.0:80;"
+	echo "    root /var/www/$SITENAME;"
+	echo "    index index.html index.htm index.php;"
+	echo "    server_name $SITENAME;"
+	echo "    access_log /dev/stdout;"
+	echo "    error_log  /dev/stderror error;"
+	echo "    charset utf-8;"
+	echo "    location / {"
+	echo "            try_files \$uri \$uri/ /index.html /index.php?\$query_string;"
+	echo "        }"
+	echo "    error_page 404 /index.php;"
+	echo "    location ~ \.php\$ {"
+	echo "        include /etc/nginx/fastcgi.conf;"
+	echo "        fastcgi_pass  127.0.0.1:9000;"
+	echo "    }"
+	echo "    location ~ /\.ht {"
+	echo "        deny all;"
+	echo "    }"
+	echo "}"
+    } | cat > "/etc/nginx/sites-available/${SITENAME}.conf"
+    
+    echo "Enabling config in /etc/nginx/sites-enabled"
+    ln -s "/etc/nginx/sites-available/${SITENAME}.conf" "/etc/nginx/sites-enabled/${SITENAME}.conf"
+
+    echo "Testing nginx config being generated..."
+    nginx -t
+
+    echo "All is ok! Ready to go!"
+    nginx -s reload	
+
+    echo "Nginx restarted!"
+    ODexit 0
+fi

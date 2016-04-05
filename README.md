@@ -1,98 +1,11 @@
 # docker-drupal7
-
-
-Database docker container
-=====================================
-
-
-We can run mysql database using this command:
-
-```shell
-
-    docker run --name mysql -e MYSQL_ROOT_PASSWORD=my-secret-pw -d solfisk/mariadb-percona:latest
-
-```
-
-
-Configuration options
-=====================================
-This values are loaded from process environment and can be used to configure application.
-
-Set timezone
-
-- `TIMEZONE` `Europe/Moscow`
-
-Set database configuration:
-
-- `MYSQL_HOST` `mysql`
-
-- `MYSQL_PORT` `3306`
-
-- `MYSQL_USER` `admin`
-
-- `MYSQL_DATABASE` `nota_dk`
-
-- `MYSQL_PASSWORD` `admin`
-
-Set site name
-
-- `SITENAME` `my-site.com`
-
-Set PHP configuration parameters
-
-- `PHP_MEMORY_LIMIT` `512M`
-
-- `MAX_UPLOAD` `50M`
-
-- `PHP_MAX_FILE_UPLOAD` `200`
-
-- `PHP_MAX_POST` `100M`
-
-
-
-Configuriing site config
-===================================
-
-Examine the contents of `sites-availble/` folder and tune/generate yours one.
-Upload your SSL certificates to `ssl/` folder, that are used by your site `.conf` file.
-
+====================================
+Container for running Drupal7 based sites.
 
 
 
 Starting container
 ====================================
-
-Under construction - not the final way of starting it;
-
-***We need to start the database container***
-
-```
-
-    # docker run --name mysql -e MYSQL_ROOT_PASSWORD=my-secret-pw -d solfisk/mariadb-percona:latest
-
-```
-
-Than we need to inspect it to get it's IP address on local network being bridged
-
-```
-
-    # docker inspect mysql
-
-```
-
-I have it running on `IPAddress": "172.17.0.2"`.
-
-Than we need to create database on this host. Unfortunatly, linking hosts is not working when we try to build the container!
-
-```
-
-    $ mysql_setpermission --host 172.17.0.2 -user root --password
-
-```
-
-You need to create user `admin` with password `admin` and database of name of `nota_dk` and grant 
-SELECT,INSERT,UPDATE,DELETE,CREATE,DROP,INDEX,ALTER permissions on it from any host.
-I used mysql workbench for doing this.
 
 
 ***Create a data volume container***
@@ -105,6 +18,14 @@ See https://docs.docker.com/engine/userguide/containers/dockervolumes/
 	# docker create -v /var/www --name drupal-data alpine:latest /bin/true
 
 ```
+
+***Including SSL, custom nginx configs***
+
+Before building container, you can customize it, including your own nginx config
+files for your sites into `sites/available` directory, alongside with certificates
+into `ssl` directory.
+
+
 
 ***Build current container ***
 
@@ -138,27 +59,78 @@ This container has this:
 
 - script to restore data
 
+- script to generate nginx site - config + directory for it
 
-***Download drupal core***
-
-Execute this script to download drupal-7 from official repo using drush
+***Create new site***
 
 ```
 
-	# docker exec -ti drupal7 drush dl --destination /var/www/localhost/htdocs drupal-7.x
+	# docker exec -ti drupal7 createSite drupal7.local
+
+```
+
+It will create directory of `/var/ww/drupal7.local`, the corresponding config in `/etc/nginx/sites-available/drupal7.local`,
+enable it by means of symlinking it to `/etc/nginx/sites-enabled/drupal7.local`, than test and reload nginx config.
+
+
+
+***Download drupal core***
+
+Execute this script to download drupal-7 from official repo using drush into newly created directory for `drupal7.local`
+
+```
+
+	# docker exec -ti drupal7 drush dl --destination /var/www/drupal7.local drupal-7.x
 
 ```
 
 ***Set up a site***
 
+We can configure drupal using `drush` tool like this:
+
 ````
 
- 	# docker exec -w /var/www/localhost/htdocs drush site-install standard --site-name=my-site.com \
+ 	# docker exec -ti drupal7 cd /var/www/drupal7.local && drush site-install standard --site-name=my-site.com \
     --account-name=admin \
     --account-pass=admin \
     --db-url=mysql://admin:admin@mysql:3306/my-site
 
 ````
+
+
+Database docker container
+=====================================
+
+
+We can run mysql database using this command:
+
+```shell
+
+    docker run --name mysql -e MYSQL_ROOT_PASSWORD=my-secret-pw -d solfisk/mariadb-percona:latest
+
+```
+
+Than we need to inspect it to get it's IP address on local network being bridged
+
+```
+
+    # docker inspect mysql
+
+```
+
+I have it running on `IPAddress": "172.17.0.2"`.
+
+Than we need to create database on this host.
+
+```
+
+    $ mysql_setpermission --host 172.17.0.2 -user root --password
+
+```
+
+You need to create user `admin` with password `admin` and database of name of `nota_dk` and grant 
+SELECT,INSERT,UPDATE,DELETE,CREATE,DROP,INDEX,ALTER permissions on it from any host.
+I used mysql workbench for doing this.
 
 
 Info

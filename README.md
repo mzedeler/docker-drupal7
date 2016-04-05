@@ -1,5 +1,5 @@
 # docker-drupal7
-====================================
+
 Container for running Drupal7 based sites.
 
 
@@ -27,7 +27,7 @@ into `ssl` directory.
 
 
 
-***Build current container ***
+***Build current container***
 
 ```
 
@@ -61,6 +61,24 @@ This container has this:
 
 - script to generate nginx site - config + directory for it
 
+
+***Backup data***
+
+```
+
+	# docker exec -ti drupal7 backup > /var/tmp/drupal7.backup
+
+```
+
+***Restore data***
+
+```
+
+	# cat /var/tmp/drupal7.backup | docker exec -ti drupal7 restore 
+
+```
+
+
 ***Create new site***
 
 ```
@@ -90,7 +108,8 @@ We can configure drupal using `drush` tool like this:
 
 ````
 
- 	# docker exec -ti drupal7 cd /var/www/drupal7.local && drush site-install standard --site-name=my-site.com \
+ 	# docker exec -ti drupal7 cd /var/www/drupal7.local && drush site-install standard \
+	--site-name=drupal7.local \
     --account-name=admin \
     --account-pass=admin \
     --db-url=mysql://admin:admin@mysql:3306/my-site

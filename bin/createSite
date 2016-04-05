@@ -58,5 +58,5 @@ else
     nginx -s reload	
 
     echo "Nginx restarted!"
-    ODexit 0
+    exit 0
 fi

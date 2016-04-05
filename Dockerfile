@@ -137,7 +137,7 @@ RUN chmod 775 -R /var/www
 VOLUME /var/www
 
 # Add custom scripts
-ADD bin/ /usr/bin
+ADD bin/* /bin/
 
 # Expose the ports for nginx http
 EXPOSE 80 443

@@ -21,7 +21,7 @@ else
     mkdir -p "/var/www/${SITENAME}"
 
     echo "Setting directory ownership..."
-    chown nginx:www-data "/var/www/${SITENAME}" -rv
+    chown nginx:www-data "/var/www/${SITENAME}" -Rv
 
     echo "Making config in /etc/nginx/sites-available"
 

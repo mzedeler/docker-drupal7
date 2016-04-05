@@ -10,16 +10,6 @@ FROM smebberson/alpine-base:1.2.0
 # Set timezone
 ENV TIMEZONE Europe/Moscow
 
-# Set database configuration
-ENV MYSQL_HOST mysql
-ENV MYSQL_PORT 3306
-ENV MYSQL_USER admin
-ENV MYSQL_DATABASE nota_dk
-ENV MYSQL_PASSWORD admin
-
-# Set site name
-ENV SITENAME my-site.com
-
 # Set PHP configuration parameters
 ENV PHP_MEMORY_LIMIT 512M
 ENV MAX_UPLOAD 50M
@@ -28,7 +18,6 @@ ENV PHP_MAX_POST 100M
 
 # Set Memcached memory limit
 ENV MEMCACHED_MEM_LIMIT 128
-
 
 # Install nginx
 RUN apk add --update \
@@ -100,7 +89,8 @@ ADD sites-available/ /etc/nginx/sites-available
 ADD ssl /etc/nginx/ssl
 
 # Enable all our sites
-RUN ln -s /etc/nginx/sites-available /etc/nginx/sites-enabled
+RUN mkdir -p /etc/nginx/sites-enabled
+RUN ln -s /etc/nginx/sites-available/default.conf /etc/nginx/sites-enabled/default.conf
 
 # Set sane permissions for  NGINX config
 RUN chown root:root /etc/nginx -R -v
@@ -136,7 +126,7 @@ RUN chmod 775 -R /var/www
 # Export volume and populate it with data after mount
 VOLUME /var/www
 
-# Add custom scripts
+# Add our custom scripts
 ADD bin/* /bin/
 
 # Expose the ports for nginx http

@@ -1,4 +1,4 @@
-FROM smebberson/alpine-base:1.2.0
+FROM sickp/alpine-nginx
 # MAINTAINER
 
 # Code is partially based on MIT licensed code
@@ -21,7 +21,6 @@ ENV MEMCACHED_MEM_LIMIT 128
 
 # Install nginx
 RUN apk add --update \
-	nginx \
 	git \
 	memcached \
 	php-mcrypt php-soap php-openssl php-gmp php-pdo_odbc php-json php-dom php-pdo php-zip php-mysql \
@@ -48,8 +47,7 @@ ADD test.php /tmp/test.php
 RUN php /tmp/test.php
 
 # Edit PHP-FPM configuration
-RUN sed -i -e "s/;daemonize\s*=\s*yes/daemonize = no/g" /etc/php/php-fpm.conf
-RUN sed -i -e "s/listen\s*=\s*127.0.0.1:9000/listen = 9000/g" /etc/php/php-fpm.conf
+ADD etc/php/php-fpm.conf /etc/php/php-fpm.conf
 RUN sed -i "s|memory_limit =.*|memory_limit = ${PHP_MEMORY_LIMIT}|" /etc/php/php.ini
 RUN sed -i "s|upload_max_filesize =.*|upload_max_filesize = ${MAX_UPLOAD}|" /etc/php/php.ini
 RUN sed -i "s|max_file_uploads =.*|max_file_uploads = ${PHP_MAX_FILE_UPLOAD}|" /etc/php/php.ini
@@ -68,9 +66,6 @@ RUN php /tmp/drush.phar core-status
 RUN chmod +x /tmp/drush.phar
 RUN mv /tmp/drush.phar /bin/drush
 
-# Set permissions for server directory
-RUN chown -R nginx:www-data /var/lib/nginx
-
 # Clear old nginx config
 RUN rm -rf /etc/nginx
 
@@ -78,53 +73,43 @@ RUN rm -rf /etc/nginx
 RUN git clone https://github.com/perusio/drupal-with-nginx.git /etc/nginx
 RUN cd /etc/nginx && git checkout D7
 
-# Clean examples for available sites
-RUN rm -f /etc/nginx/sites-available/000-default /etc/nginx/sites-available/example.com.conf
-
-# Load OUR custom NGINX config if present
-
-ADD sites-available/ /etc/nginx/sites-available
-
-# Load OUR certificates
-ADD ssl /etc/nginx/ssl
+# Create sites-enabled to enable sites
+RUN mkdir /etc/nginx/sites-enabled
 
 # Enable all our sites
-RUN mkdir -p /etc/nginx/sites-enabled
-RUN ln -s /etc/nginx/sites-available/default.conf /etc/nginx/sites-enabled/default.conf
+RUN sed -i -e "/IPv6/d" /etc/nginx/sites-available/000-default
+RUN ln -s /etc/nginx/sites-available/000-default /etc/nginx/sites-enabled/
 
 # Set sane permissions for  NGINX config
-RUN chown root:root /etc/nginx -R -v
+RUN chown -R root:root /etc/nginx
 
 # Set nginx user to the one being used by alpine linux
 RUN sed -i -e "s/www\s*-data/nginx/g" /etc/nginx/nginx.conf
 
-#Fix nginx config to work on alpine linux
+# Fix nginx config to work on alpine linux
 RUN sed -i -e "s/set_real_ip_from/#set_real_ip_from/g" /etc/nginx/nginx.conf
 RUN sed -i -e "s/real_ip_header/#real_ip_header/g" /etc/nginx/nginx.conf
 RUN sed -i -e "s/upload_progress/#upload_progress/g" /etc/nginx/nginx.conf
-RUN mkdir -p /var/cache/nginx/microcache
-RUN chmod 777 /var/cache/nginx/microcache
+# RUN mkdir -p /var/cache/nginx/microcache
+# RUN chmod 777 /var/cache/nginx/microcache
 
-#Making it output log to stderr
+RUN sed -i -e "s/aio on/aio off/g" /etc/nginx/apps/drupal/drupal.conf
+# track_uploads, flv and mp4 not currently supported
+# This one may have: https://github.com/sickp/docker-alpine-nginx
+# RUN sed -i -e "s/flv;//g" /etc/nginx/apps/drupal/drupal.conf
+# RUN sed -i -e "s/[[:space:]]+mp4;//g" /etc/nginx/apps/drupal/drupal.conf
+# RUN sed -i -e "s/[[:space:]]+track_uploads;//g" /etc/nginx/apps/drupal/drupal.conf
+# Progress upload tracking not compiled into nginx
+RUN echo '' > /etc/nginx/apps/drupal/drupal_upload_progress.conf
+RUN sed -i -e '/track_uploads/d' /etc/nginx/apps/drupal/drupal.conf
+
+# Making it output log to stderr
 RUN sed -i -e "s/error_log/#error_log/g" /etc/nginx/nginx.conf
 
 RUN echo "error_log /dev/stderr;" >> /etc/nginx/nginx.conf
 
 # Test the nginx configuration
-RUN nginx -t
-
-# Create directory root for webserver
-RUN mkdir -p /var/www/localhost/htdocs
-
-#Add placeholder files to root for webserver
-ADD www/* /var/www/localhost/htdocs/
-
-# Set ownership and permissions on drupal code
-RUN chown -R -v nginx:www-data /var/www
-RUN chmod 775 -R /var/www
-
-# Export volume and populate it with data after mount
-VOLUME /var/www
+RUN nginx -t 2>/dev/null
 
 # Add our custom scripts
 ADD bin/* /bin/
@@ -134,3 +119,4 @@ EXPOSE 80 443
 
 # Run entry point script, that starts both php-fpm and nginx at foreground
 CMD ["/bin/start"]
+

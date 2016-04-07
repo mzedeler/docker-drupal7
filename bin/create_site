@@ -2,67 +2,38 @@
 
 set -e
 
-if [ -z ${1} ]
+if [ -z $1 ]
 then
      echo "Usage - createSite [sitename]"
      exit 1
 fi
 
-SITENAME=${1}
+SITENAME=$1
+CONFIG_DIR=/var/www/nginx/sites-available
+TEMPLATE=/etc/nginx/sites-available/example.com.conf
+SITE_CONFIG=$CONFIG_DIR/$SITENAME.conf
 
-if [ -f "/etc/nginx/sites-available/${SITENAME}.conf" ]
+if [ -f "$CONFIG_DIR/$SITENAME.conf" ]
 then
-    echo "CREATESITE_ERROR: Unable create config for site ${SITENAME}. It is already defined!"
+    echo "CREATESITE_ERROR: Unable create config for site $SITENAME. It is already defined!"
     exit 1
 else
     echo "CREATESITE_DEBUG: Creating site $SITENAME...."
 
-    echo "CREATESITE_DEBUG: Making directory at ${SITENAME}"
-    mkdir -p /var/www/"${SITENAME}"
-
-    echo "CREATESITE_DEBUG: Setting directory ownership of ${SITENAME}"
-    chown nginx:www-data /var/www/"${SITENAME}" -Rv
-
-	echo "CREATESITE_DEBUG: Show result of generating ${SITENAME} directory"
-	ls -l /var/www/
+    mkdir -p $CONFIG_DIR
 
     echo "CREATESITE_DEBUG: Making config in /etc/nginx/sites-available"
 
-    {
-	echo "server {"
-	echo "    listen  0.0.0.0:80;"
-	echo "    root /var/www/$SITENAME;"
-	echo "    index index.html index.htm index.php;"
-	echo "    server_name $SITENAME;"
-	echo "    access_log /dev/stdout;"
-	echo "    error_log  /dev/stderror error;"
-	echo "    charset utf-8;"
-	echo "    location / {"
-	echo "            try_files \$uri \$uri/ /index.html /index.php?\$query_string;"
-	echo "        }"
-	echo "    error_page 404 /index.php;"
-	echo "    location ~ \.php\$ {"
-	echo "        include /etc/nginx/fastcgi.conf;"
-	echo "        fastcgi_pass  127.0.0.1:9000;"
-	echo "    }"
-	echo "    location ~ /\.ht {"
-	echo "        deny all;"
-	echo "    }"
-	echo "}"
-    } | cat > /etc/nginx/sites-available/"${SITENAME}".conf
-
-	chown root:root /etc/nginx/sites-available/"${SITENAME}".conf
-	
-	echo "CREATESITE_DEBUG: Show result of generating config"
-	ls -l /etc/nginx/sites-available/"${SITENAME}".conf
-
+    cp $TEMPLATE $SITE_CONFIG
+    chown root:root $SITE_CONFIG
     
-    echo "CREATESITE_DEBUG: Enabling config in /etc/nginx/sites-enabled"
-    ln -s /etc/nginx/sites-available/"${SITENAME}".conf /etc/nginx/sites-enabled/"${SITENAME}".conf
-
-	echo "CREATESITE_DEBUG: Show result of enabled config"
-	ls -l /etc/nginx/sites-enabled/"${SITENAME}".conf
-
+    sed -i -e 's/root \/var\/www\/sites\/example.com/root \/var\/www\/drupal7/' $SITE_CONFIG
+    sed -i -e "s/example.com/$SITENAME/g" $SITE_CONFIG
+    sed -i -e /ssl_certificate/d $SITE_CONFIG
+    sed -i -e /ipv6/d $SITE_CONFIG
+    sed -i -e /IPv6/d $SITE_CONFIG
+    
+    ln -s $SITE_CONFIG /etc/nginx/sites-enabled
 
     echo "CREATESITE_DEBUG: Testing nginx config being generated..."
     nginx -t

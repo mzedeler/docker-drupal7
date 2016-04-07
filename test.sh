@@ -58,43 +58,25 @@ docker exec -ti drupal7 drush dl -y --destination=/var/www/ --drupal-project-ren
 debug "Running drush to configure site in the /var/www/$DRUPAL_SITE_NAME"
 
 DRUSH_SITE_INSTALL="
-    echo ***drupal*** && \
     cd /var/www/drupal7 && \
-    ls && \
     drush site-install standard \
       -y \
       --site-name="${DRUPAL_SITE_NAME}" \
       --account-name="${MYSQL_DRUPAL_USERNAME}" \
       --account-pass="${MYSQL_DRUPAL_PASSWORD}" \
-      --db-url=mysql://"${MYSQL_DRUPAL_USERNAME}":"${MYSQL_DRUPAL_PASSWORD}"@mysql:3306/"${MYSQL_DRUPAL_DATABASE}" && \
-      ls /var/www/$DRUPAL_SITE_NAME
+      --db-url=mysql://"${MYSQL_DRUPAL_USERNAME}":"${MYSQL_DRUPAL_PASSWORD}"@mysql:3306/"${MYSQL_DRUPAL_DATABASE}"
 "
 
 docker exec -i drupal7 /bin/sh -c "$DRUSH_SITE_INSTALL"
 debug "drush tasks end!"
-exit
 
 debug "Generate site tasks start:"
 
 debug "Generating site of $DRUPAL_SITE_NAME"
-docker exec -ti drupal7 create_site "${DRUPAL_SITE_NAME}" > /dev/null 2>&1
-
-debug "Show that site config exists in /etc/nginx/sites-enabled"
-docker exec -ti drupal7 ls -l /etc/nginx/sites-enabled
-
-debug "Show that site config exists in /etc/nginx/sites-enabled/${DRUPAL_SITE_NAME}.conf"
-docker exec -ti drupal7 ls -l /etc/nginx/sites-enabled/"${DRUPAL_SITE_NAME}".conf
+docker exec -ti drupal7 create_site "${DRUPAL_SITE_NAME}"
 
 debug "generate site tasks end!"
 
-debug "drush tasks start:"
-
-debug "Show directory contents BEFORE DOWNLOADING drupal in /var/www"
-docker exec -ti drupal7 ls -l /var/www
-debug "Show directory contents BEFORE DOWNLOADING drupal in /var/www/${DRUPAL_SITE_NAME}"
-docker exec -ti drupal7 ls -l /var/www/"${DRUPAL_SITE_NAME}"
-
-	
 DRUPAL_IP=`docker inspect --format '{{ .NetworkSettings.IPAddress }}' drupal7`	
 
 debug "Open http://${DRUPAL_IP}/ to see your site! Use ${MYSQL_DRUPAL_USERNAME}:${MYSQL_DRUPAL_PASSWORD} to authorize!"

@@ -13,7 +13,7 @@ DRUPAL_SITE_NAME="drupal7.local"
 #docker rmi $(docker images -q)
 
 #echo "DEBUG: Making volume container..."
-docker create -v /var/www --name drupal-data alpine:latest /bin/true
+#docker create -v /var/www --name drupal-data alpine:latest /bin/true
 
 #echo "DEBUG: Making mariadb container"
 docker run --name mysql -e MYSQL_ROOT_PASSWORD="$(MYSQL_PWD)" -d solfisk/mariadb-percona:latest
@@ -61,7 +61,7 @@ echo "DEBUG: Show directory contents BEFORE DOWNLOADING drupal in /var/www/${DRU
 docker exec -ti drupal7 ls -l /var/www/"${DRUPAL_SITE_NAME}"
 
 echo "DEBUG: Running drush to download site into /var/www/$DRUPAL_SITE_NAME"
-docker exec -ti drupal7 drush dl -y --destination /var/www/"${DRUPAL_SITE_NAME}" drupal-7.x
+docker exec -ti drupal7 drush dl -y --destination=/var/www/"${DRUPAL_SITE_NAME}" drupal-7.x
 
 echo "DEBUG: Show result of drush downloading in the /var/www"
 docker exec -ti drupal7 ls -l /var/www/
@@ -71,13 +71,13 @@ docker exec -ti drupal7 ls -l /var/www/"${DRUPAL_SITE_NAME}"
 
 echo "DEBUG: Running drush to configure site in the /var/www/$DRUPAL_SITE_NAME"
 docker exec -ti drupal7 cd /var/www/"${DRUPAL_SITE_NAME}" && drush site-install standard \
-	--site-name="${DRUPAL_SITE_NAME}" \
+    --site-name="${DRUPAL_SITE_NAME}" \
     --account-name="${MYSQL_DRUPAL_USERNAME}" \
     --account-pass="${MYSQL_DRUPAL_PASSWORD}" \
     --db-url=mysql://"${MYSQL_DRUPAL_USERNAME}":"${MYSQL_DRUPAL_PASSWORD}"@mysql:3306/"${MYSQL_DRUPAL_DATABASE}"
-	
+
 echo "DEBUG: drush tasks end!"
-	
-DRUPAL_IP=`docker inspect --format '{{ .NetworkSettings.IPAddress }}' drupal7`	
+
+DRUPAL_IP=`docker inspect --format '{{ .NetworkSettings.IPAddress }}' drupal7`
 
 echo "DEBUG: Open http://${DRUPAL_IP}/ to see your site! Use ${MYSQL_DRUPAL_USERNAME}:${MYSQL_DRUPAL_PASSWORD} to authorize!"

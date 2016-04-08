@@ -1,3 +1,3 @@
 #!/bin/sh
 
-tar -cj /var/www/localhost/htdocs
+tar -cj /var/www

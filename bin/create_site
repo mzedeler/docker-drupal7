@@ -1,0 +1,46 @@
+#!/bin/sh
+
+set -e
+
+if [ -z $1 ]
+then
+     echo "Usage - createSite [sitename]"
+     exit 1
+fi
+
+SITENAME=$1
+CONFIG_DIR=/var/www/nginx/sites-available
+TEMPLATE=/etc/nginx/sites-available/example.com.conf
+SITE_CONFIG=$CONFIG_DIR/$SITENAME.conf
+
+if [ -f "$CONFIG_DIR/$SITENAME.conf" ]
+then
+    echo "CREATESITE_ERROR: Unable create config for site $SITENAME. It is already defined!"
+    exit 1
+else
+    echo "CREATESITE_DEBUG: Creating site $SITENAME...."
+
+    mkdir -p $CONFIG_DIR
+
+    echo "CREATESITE_DEBUG: Making config in /etc/nginx/sites-available"
+
+    cp $TEMPLATE $SITE_CONFIG
+    chown root:root $SITE_CONFIG
+    
+    sed -i -e 's/root \/var\/www\/sites\/example.com/root \/var\/www\/drupal7/' $SITE_CONFIG
+    sed -i -e "s/example.com/$SITENAME/g" $SITE_CONFIG
+    sed -i -e /ssl_certificate/d $SITE_CONFIG
+    sed -i -e /ipv6/d $SITE_CONFIG
+    sed -i -e /IPv6/d $SITE_CONFIG
+    
+    ln -s $SITE_CONFIG /etc/nginx/sites-enabled
+
+    echo "CREATESITE_DEBUG: Testing nginx config being generated..."
+    nginx -t
+
+    echo "CREATESITE_DEBUG: All is ok! Ready to go!"
+    nginx -s reload	
+
+    echo "CREATESITE_DEBUG: Nginx restarted!"
+    exit 0
+fi

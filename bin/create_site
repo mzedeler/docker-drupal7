@@ -9,6 +9,10 @@ then
 fi
 
 SITENAME=$1
+MYSQL_ROOT_PWD=$2
+MYSQL_DRUPAL_DATABASE=$3
+MYSQL_DRUPAL_USERNAME=$4
+MYSQL_DRUPAL_PASSWORD=$5
 CONFIG_DIR=/var/www/nginx/sites-enabled
 TEMPLATE=/etc/nginx/sites-available/example.com.conf
 SITE_CONFIG=$CONFIG_DIR/$SITENAME.conf
@@ -40,5 +44,17 @@ else
     nginx -s reload	
 
     echo "CREATESITE_DEBUG: Nginx restarted!"
+
+    php <<-END_PHP
+        <?php
+             \$db = mysql_connect('mysql', 'root', '$MYSQL_ROOT_PWD') or die('Unable to connect to mysql: ' . mysql_error());
+             mysql_query("CREATE SCHEMA \`$MYSQL_DRUPAL_DATABASE\` DEFAULT CHARACTER SET utf8");
+             mysql_query("CREATE USER '$MYSQL_DRUPAL_USERNAME'@'%' IDENTIFIED BY '$MYSQL_DRUPAL_PASSWORD'");
+             mysql_query("GRANT SELECT, INSERT, UPDATE, DELETE, CREATE, ALTER, INDEX, DROP ON $MYSQL_DRUPAL_DATABASE.* TO '$MYSQL_DRUPAL_USERNAME'@'%'");
+             mysql_query("FLUSH PRIVILEGES");
+             mysql_close(\$db);
+             echo 'done';
+END_PHP
+    
     exit 0
 fi

@@ -1,12 +1,12 @@
 #!/bin/bash
 
+DEBUG=${1-0}
 MYSQL_ROOT_PWD="my-secret-pw"
 MYSQL_DRUPAL_USERNAME="drupal7"
 MYSQL_DRUPAL_DATABASE="drupal7"
 MYSQL_DRUPAL_PASSWORD="drupal7"
 DRUPAL_SITE_NAME="drupal7.local"
-
-DEBUG=1
+BACKUP_FILE=$(tempfile -s .tar.bz2)
 
 function debug {
     if [ $DEBUG == 1 ]; then
@@ -14,48 +14,39 @@ function debug {
     fi
 }
 
-# Delete all containers to verify we have fresh data before starting script
-#docker rm $(docker ps -a -q)
-# Delete all images to verify we have fresh data before starting script
-#docker rmi $(docker images -q)
+function drupal_ip {
+    docker inspect --format '{{ .NetworkSettings.IPAddress }}' test-drupal7
+}
 
-#debug "Making volume container..."
-docker kill mysql
-docker rm drupal-data mysql
-docker create -v /var/www --name drupal-data alpine:latest /bin/true
+function drupal7_check {
+    GET -H 'Host: drupal7.local' -H 'User-Agent: ' $(drupal_ip) | grep -q 'Welcome to'
+    if [ $? == 0 ]; then
+        echo drupal7 is ok
+    else
+        echo Some error occured - drupal7 is not ok
+        exit
+    fi
+}
 
-#debug "Making mariadb container"
-docker run --name mysql -e MYSQL_ROOT_PASSWORD="$MYSQL_ROOT_PWD" -d solfisk/mariadb-percona:latest
-
-debug "Waiting for mariadb container to come up"
-until [ "$(docker exec -i mysql mysqladmin -u root --password="$MYSQL_ROOT_PWD" ping 2>/dev/null)" == "mysqld is alive" ]; do
-    sleep 1
-done
-
-debug "Setting up schema for drupal"
-{
-    echo "CREATE SCHEMA \`$MYSQL_DRUPAL_DATABASE\` DEFAULT CHARACTER SET utf8 ;"
-    echo "CREATE USER '$MYSQL_DRUPAL_USERNAME'@'%' IDENTIFIED BY '$MYSQL_DRUPAL_PASSWORD';"
-    echo "GRANT  SELECT, INSERT, UPDATE, DELETE, CREATE, ALTER, INDEX, DROP ON $MYSQL_DRUPAL_DATABASE.* TO '$MYSQL_DRUPAL_USERNAME'@'%';"
-    echo "FLUSH PRIVILEGES;"
-} | docker exec -i mysql mysql -uroot --password="$MYSQL_ROOT_PWD"
+if [ $DEBUG != 1 ]; then
+    trap "{ echo 'Cleaning up - run in debug mode ($0 1) to avoid this:' ; docker rm -f test-mysql test-drupal7 test-drupal-data 2> /dev/null; rm $BACKUP_FILE 2>/dev/null; exit 255; }" EXIT SIGINT SIGTERM
+fi
 
 debug "Building our container as solfisk/drupal7"
-docker build -t solfisk/drupal7 .
+docker build -q -t solfisk/drupal7 .
 
-debug "Removing old container"
-docker kill drupal7
-docker rm drupal7
+docker rm -f drupal-data test-mysql test-drupal7 2>/dev/null
+docker create -v /var/www --name test-drupal-data alpine:latest /bin/true
 
-debug "Starting our container"
-docker run -d --volumes-from drupal-data --link mysql --name drupal7 solfisk/drupal7
+docker run -d --name test-mysql -e MYSQL_ROOT_PASSWORD="$MYSQL_ROOT_PWD" solfisk/mariadb-percona:latest
+# Caveat emptor: a relatively recent version of docker contained a bug that caused linking like this to fail
+# Update docker if the drupal container is unable to connect to mysql
+docker run -d --name test-drupal7 --volumes-from test-drupal-data --link 'test-mysql:mysql' solfisk/drupal7
 
-debug "Installing drupal core"
-
-debug "Running drush to download site into /var/www/$DRUPAL_SITE_NAME"
-docker exec -ti drupal7 drush dl -y --destination=/var/www/ --drupal-project-rename=drupal7 drupal-7.x
-
-debug "Running drush to configure site in the /var/www/$DRUPAL_SITE_NAME"
+debug "Waiting for mariadb container to come up"
+until [ "$(docker exec -i test-mysql mysqladmin -u root --password="$MYSQL_ROOT_PWD" ping 2>/dev/null)" == "mysqld is alive" ]; do
+    sleep 1
+done
 
 DRUSH_SITE_INSTALL="
     cd /var/www/drupal7 && \
@@ -67,48 +58,18 @@ DRUSH_SITE_INSTALL="
       --db-url='mysql://$MYSQL_DRUPAL_USERNAME:$MYSQL_DRUPAL_PASSWORD@mysql:3306/$MYSQL_DRUPAL_DATABASE'
 "
 
-docker exec -i drupal7 /bin/sh -c "$DRUSH_SITE_INSTALL"
-debug "drush tasks end!"
+docker exec -ti test-drupal7 create_site "$DRUPAL_SITE_NAME" "$MYSQL_ROOT_PWD" "$MYSQL_DRUPAL_DATABASE" "$MYSQL_DRUPAL_USERNAME" "$MYSQL_DRUPAL_PASSWORD"
+docker exec -ti test-drupal7 drush dl -y --destination=/var/www/ --drupal-project-rename=drupal7 drupal-7.x
+docker exec -i test-drupal7 /bin/sh -c "$DRUSH_SITE_INSTALL"
 
-debug "Generate site tasks start:"
+drupal7_check
 
-debug "Generating site of $DRUPAL_SITE_NAME"
-docker exec -ti drupal7 create_site "${DRUPAL_SITE_NAME}"
-
-debug "generate site tasks end!"
-
-function drupal_ip {
-    docker inspect --format '{{ .NetworkSettings.IPAddress }}' drupal7
-}
-
-function drupal7_ok {
-    GET -H 'Host: drupal7.local' -H 'User-Agent: ' $(drupal_ip) | grep -q 'Welcome to'
-}
-
-drupal7_ok $DRUPAL_IP
-if [ $? == 0 ]; then
-    echo "Open http://$(drupal_ip)/ to see your site! Use ${MYSQL_DRUPAL_USERNAME}:${MYSQL_DRUPAL_PASSWORD} to authorize!"
-else
-    echo Some error occured - drupal7 is not running
-fi
-
-debug "Cleaning existent backup..."
-rm -rf /var/tmp/drupal.backup
-debug "Making backup..."
-docker exec -i drupal7 /bin/backup > /var/tmp/drupal.backup.tar.bz2
-debug "Backup finished in the /var/tmp"
-
-docker kill drupal7
-docker rm drupal7
-docker run -d --volumes-from drupal-data --link mysql --name drupal7 solfisk/drupal7
+docker exec -i test-drupal7 /bin/backup > $BACKUP_FILE
+docker rm -f test-drupal7
+docker run -d --volumes-from test-drupal-data --link test-mysql:mysql --name test-drupal7 solfisk/drupal7
 
 debug Restoring
-cat /var/tmp/drupal.backup.tar.bz2 | docker exec -i drupal7 /bin/restore
+docker exec -i test-drupal7 /bin/restore < $BACKUP_FILE
 debug Restore done
 
-drupal7_ok $DRUPAL_IP
-if [ $? == 0 ]; then
-    echo The site is still up
-else
-    echo Some error occured - drupal7 is not running
-fi
+drupal7_check

@@ -73,12 +73,14 @@ RUN rm -rf /etc/nginx
 RUN git clone https://github.com/perusio/drupal-with-nginx.git /etc/nginx
 RUN cd /etc/nginx && git checkout D7
 
-# Create sites-enabled to enable sites
-RUN mkdir /etc/nginx/sites-enabled
+# Make nginx use /var/www/nginx/sites-enabled as well as the one in /etc
+# so this configuration is being backed up
+RUN sed -i '/include \/etc\/nginx\/sites-enabled\/\*;/a include /var/www/nginx/sites-enabled/*;' /etc/nginx/nginx.conf
+RUN mkdir -p /var/www/nginx/sites-enabled /var/www/nginx/sites-available
 
-# Enable all our sites
-RUN sed -i -e "/IPv6/d" /etc/nginx/sites-available/000-default
-RUN ln -s /etc/nginx/sites-available/000-default /etc/nginx/sites-enabled/
+# Enable the default site
+# RUN sed -i -e "/IPv6/d" /etc/nginx/sites-available/000-default
+# RUN ln -s /etc/nginx/sites-available/000-default /etc/nginx/sites-enabled/
 
 # Set sane permissions for  NGINX config
 RUN chown -R root:root /etc/nginx

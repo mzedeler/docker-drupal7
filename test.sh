@@ -61,10 +61,10 @@ DRUSH_SITE_INSTALL="
     cd /var/www/drupal7 && \
     drush site-install standard \
       -y \
-      --site-name="${DRUPAL_SITE_NAME}" \
-      --account-name="${MYSQL_DRUPAL_USERNAME}" \
-      --account-pass="${MYSQL_DRUPAL_PASSWORD}" \
-      --db-url=mysql://"${MYSQL_DRUPAL_USERNAME}":"${MYSQL_DRUPAL_PASSWORD}"@mysql:3306/"${MYSQL_DRUPAL_DATABASE}"
+      --site-name='$DRUPAL_SITE_NAME' \
+      --account-name='$MYSQL_DRUPAL_USERNAME' \
+      --account-pass='$MYSQL_DRUPAL_PASSWORD' \
+      --db-url='mysql://$MYSQL_DRUPAL_USERNAME:$MYSQL_DRUPAL_PASSWORD@mysql:3306/$MYSQL_DRUPAL_DATABASE'
 "
 
 docker exec -i drupal7 /bin/sh -c "$DRUSH_SITE_INSTALL"
@@ -77,9 +77,20 @@ docker exec -ti drupal7 create_site "${DRUPAL_SITE_NAME}"
 
 debug "generate site tasks end!"
 
-DRUPAL_IP=`docker inspect --format '{{ .NetworkSettings.IPAddress }}' drupal7`
+function drupal_ip {
+    docker inspect --format '{{ .NetworkSettings.IPAddress }}' drupal7
+}
 
-debug "Open http://${DRUPAL_IP}/ to see your site! Use ${MYSQL_DRUPAL_USERNAME}:${MYSQL_DRUPAL_PASSWORD} to authorize!"
+function drupal7_ok {
+    GET -H 'Host: drupal7.local' -H 'User-Agent: ' $(drupal_ip) | grep -q 'Welcome to'
+}
+
+drupal7_ok $DRUPAL_IP
+if [ $? == 0 ]; then
+    echo "Open http://$(drupal_ip)/ to see your site! Use ${MYSQL_DRUPAL_USERNAME}:${MYSQL_DRUPAL_PASSWORD} to authorize!"
+else
+    echo Some error occured - drupal7 is not running
+fi
 
 debug "Cleaning existent backup..."
 rm -rf /var/tmp/drupal.backup
@@ -87,12 +98,17 @@ debug "Making backup..."
 docker exec -i drupal7 /bin/backup > /var/tmp/drupal.backup.tar.bz2
 debug "Backup finished in the /var/tmp"
 
-debug "Clearing /var/www/drupal7 on docker image..."
-docker exec -i drupal7 rm -rf /var/www/drupal7
-debug "Cleared /var/www/drupal7 on docker image"
+docker kill drupal7
+docker rm drupal7
+docker run -d --volumes-from drupal-data --link mysql --name drupal7 solfisk/drupal7
 
-debug "Restoration of backup..."
+debug Restoring
 cat /var/tmp/drupal.backup.tar.bz2 | docker exec -i drupal7 /bin/restore
-debug "Restoration finished"
+debug Restore done
 
-
+drupal7_ok $DRUPAL_IP
+if [ $? == 0 ]; then
+    echo The site is still up
+else
+    echo Some error occured - drupal7 is not running
+fi

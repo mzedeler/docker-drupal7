@@ -9,7 +9,7 @@ then
 fi
 
 SITENAME=$1
-CONFIG_DIR=/var/www/nginx/sites-available
+CONFIG_DIR=/var/www/nginx/sites-enabled
 TEMPLATE=/etc/nginx/sites-available/example.com.conf
 SITE_CONFIG=$CONFIG_DIR/$SITENAME.conf
 
@@ -33,8 +33,6 @@ else
     sed -i -e /ipv6/d $SITE_CONFIG
     sed -i -e /IPv6/d $SITE_CONFIG
     
-    ln -s $SITE_CONFIG /etc/nginx/sites-enabled
-
     echo "CREATESITE_DEBUG: Testing nginx config being generated..."
     nginx -t
 

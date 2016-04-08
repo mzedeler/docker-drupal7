@@ -6,7 +6,7 @@ MYSQL_DRUPAL_DATABASE="drupal7"
 MYSQL_DRUPAL_PASSWORD="drupal7"
 DRUPAL_SITE_NAME="drupal7.local"
 
-DEBUG=0
+DEBUG=1
 
 function debug {
     if [ $DEBUG == 1 ]; then
@@ -41,7 +41,7 @@ debug "Setting up schema for drupal"
 } | docker exec -i mysql mysql -uroot --password="$MYSQL_ROOT_PWD"
 
 debug "Building our container as solfisk/drupal7"
-docker build -t solfisk/drupal7 . >/dev/null
+docker build -t solfisk/drupal7 .
 
 debug "Removing old container"
 docker kill drupal7
@@ -77,8 +77,22 @@ docker exec -ti drupal7 create_site "${DRUPAL_SITE_NAME}"
 
 debug "generate site tasks end!"
 
-DRUPAL_IP=`docker inspect --format '{{ .NetworkSettings.IPAddress }}' drupal7`	
+DRUPAL_IP=`docker inspect --format '{{ .NetworkSettings.IPAddress }}' drupal7`
 
 debug "Open http://${DRUPAL_IP}/ to see your site! Use ${MYSQL_DRUPAL_USERNAME}:${MYSQL_DRUPAL_PASSWORD} to authorize!"
+
+debug "Cleaning existent backup..."
+rm -rf /var/tmp/drupal.backup
+debug "Making backup..."
+docker exec -i drupal7 /bin/backup > /var/tmp/drupal.backup.tar.bz2
+debug "Backup finished in the /var/tmp"
+
+debug "Clearing /var/www/drupal7 on docker image..."
+docker exec -i drupal7 rm -rf /var/www/drupal7
+debug "Cleared /var/www/drupal7 on docker image"
+
+debug "Restoration of backup..."
+cat /var/tmp/drupal.backup.tar.bz2 | docker exec -i drupal7 /bin/restore
+debug "Restoration finished"
 
 

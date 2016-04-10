@@ -6,6 +6,8 @@ MYSQL_DRUPAL_USERNAME="drupal7"
 MYSQL_DRUPAL_DATABASE="drupal7"
 MYSQL_DRUPAL_PASSWORD="drupal7"
 DRUPAL_SITE_NAME="drupal7.local"
+DRUPAL_USERNAME=drupal
+DRUPAL_PASSWORD=drupal
 BACKUP_FILE=$(tempfile -s .tar.bz2)
 
 function debug {
@@ -44,17 +46,18 @@ docker run -d --name test-mysql -e MYSQL_ROOT_PASSWORD="$MYSQL_ROOT_PWD" solfisk
 docker run -d --name test-drupal7 --volumes-from test-drupal-data --link 'test-mysql:mysql' solfisk/drupal7
 
 debug "Waiting for mariadb container to come up"
-until [ "$(docker exec -i test-mysql mysqladmin -u root --password="$MYSQL_ROOT_PWD" ping 2>/dev/null)" == "mysqld is alive" ]; do
+until [ "$(docker exec -i test-mysql mysqladmin -u root ping 2>/dev/null)" == "mysqld is alive" ]; do
     sleep 1
 done
+sleep 10
 
 DRUSH_SITE_INSTALL="
     cd /var/www/drupal7 && \
     drush site-install standard \
       -y \
       --site-name='$DRUPAL_SITE_NAME' \
-      --account-name='$MYSQL_DRUPAL_USERNAME' \
-      --account-pass='$MYSQL_DRUPAL_PASSWORD' \
+      --account-name='$DRUPAL_USERNAME' \
+      --account-pass='$DRUPAL_PASSWORD' \
       --db-url='mysql://$MYSQL_DRUPAL_USERNAME:$MYSQL_DRUPAL_PASSWORD@mysql:3306/$MYSQL_DRUPAL_DATABASE'
 "
 

@@ -1,0 +1,25 @@
+#!/bin/sh
+
+set -e
+
+if [ -z $4 ]
+then
+     echo "Usage - $0 <mysql root password> <drupal db name> <drupal db username> <drupal db password>"
+     exit 1
+fi
+
+MYSQL_ROOT_PWD=$1
+MYSQL_DRUPAL_DATABASE=$2
+MYSQL_DRUPAL_USERNAME=$3
+MYSQL_DRUPAL_PASSWORD=$4
+
+php <<-END_PHP
+    <?php
+        \$db = mysql_connect('mysql', 'root', '$MYSQL_ROOT_PWD') or die('Unable to connect to mysql: ' . mysql_error());
+        mysql_query("CREATE SCHEMA \`$MYSQL_DRUPAL_DATABASE\` DEFAULT CHARACTER SET utf8");
+        mysql_query("CREATE USER '$MYSQL_DRUPAL_USERNAME'@'%' IDENTIFIED BY '$MYSQL_DRUPAL_PASSWORD'");
+        mysql_query("GRANT SELECT, INSERT, UPDATE, DELETE, CREATE, ALTER, INDEX, DROP ON $MYSQL_DRUPAL_DATABASE.* TO '$MYSQL_DRUPAL_USERNAME'@'%'");
+        mysql_query("FLUSH PRIVILEGES");
+        mysql_close(\$db);
+        echo 'done';
+END_PHP

@@ -4,7 +4,7 @@ set -e
 
 if [ -z $1 ]
 then
-     echo "Usage - $0 <sitename>"
+     echo "Usage - $0 <sitename> [ <site alias 1> [ <site alias 2> [ ... ] ] ]"
      exit 1
 fi
 
@@ -12,6 +12,7 @@ SITENAME=$1
 CONFIG_DIR=/var/www/nginx/sites-enabled
 TEMPLATE=/etc/nginx/sites-available/example.com.conf
 SITE_CONFIG=$CONFIG_DIR/$SITENAME.conf
+SERVER_NAME="$*"
 
 if [ -f "$CONFIG_DIR/$SITENAME.conf" ]
 then
@@ -28,6 +29,7 @@ else
     chown root:root $SITE_CONFIG
 
     sed -i -e 's/root \/var\/www\/sites\/example.com/root \/var\/www\/drupal7/' $SITE_CONFIG
+    sed -i -e "s/server_name example.com/server_name $SERVER_NAME/g" $SITE_CONFIG
     sed -i -e "s/example.com/$SITENAME/g" $SITE_CONFIG
     sed -i -e /ssl_certificate/d $SITE_CONFIG
     sed -i -e /ipv6/d $SITE_CONFIG

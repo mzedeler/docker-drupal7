@@ -62,7 +62,7 @@ RUN sed -i -e "s/www\s*-data/nginx/g" /etc/nginx/nginx.conf
 RUN sed -i -e "s/set_real_ip_from/#set_real_ip_from/g" /etc/nginx/nginx.conf
 RUN sed -i -e "s/real_ip_header/#real_ip_header/g" /etc/nginx/nginx.conf
 RUN sed -i -e "s/upload_progress/#upload_progress/g" /etc/nginx/nginx.conf
-RUN for f in ; do sed -i -e 's/X-Frame-Options DENY/X-Frame-Options SAMEORIGIN/g' t/drupal-with-nginx/apps/drupal/microcache_proxy_auth.conf; done
+RUN for f in $(grep -lr 'X-Frame-Options DENY' /etc/nginx); do sed -i -e 's/X-Frame-Options DENY/X-Frame-Options SAMEORIGIN/g' $f; done
 
 # Progress upload tracking not compiled into nginx
 RUN echo '' > /etc/nginx/apps/drupal/drupal_upload_progress.conf

@@ -1,1 +1,1 @@
-* * * * * root cd /var/www/drupal7 && drush cron
+* * * * * cd /var/www/drupal7 && drush cron

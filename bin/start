@@ -8,5 +8,8 @@ echo "Starting Memcached as daemon..."
 memcached -d -m "${MEMCACHED_MEM_LIMIT}" -p 11211 -u nobody -l 127.0.0.1
 echo "Memcached started as daemon!"
 
+echo "Starting crond"
+crond
+
 echo "Starting nginx in foreground"
 nginx -g "daemon off; error_log /dev/stderr;"

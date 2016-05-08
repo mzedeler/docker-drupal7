@@ -78,6 +78,9 @@ RUN echo "error_log /dev/stderr;" >> /etc/nginx/nginx.conf
 # Test the nginx configuration
 RUN nginx -t 2>/dev/null
 
+# Add crontab script for Drupal
+ADD etc/crontabs/root /etc/crontabs/root
+
 # Add our custom scripts
 ADD bin/* /bin/
 

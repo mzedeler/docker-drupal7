@@ -20,20 +20,25 @@ Management scripts:
 
 ## Starting a container
 
-    docker run -d --name mysql -e MYSQL_ROOT_PASSWORD=s3cret solfisk/mariadb-percona:latest
+    docker run -d --name mysql -e MYSQL_ROOT_PASSWORD=s3cret \
+      solfisk/mariadb-percona:latest
     docker run -d --name drupal7 --link mysql solfisk/drupal7
 
 After this, you need to set up a database for your drupal site:
 
-    docker exec drupal7 create-drupal-db s3cret my_drupal_db drupal_login drupal_password
+    docker exec drupal7 create-drupal-db \
+      s3cret my_drupal_db drupal_login drupal_password
 
 Then download the latest drupal core:
 
-    docker exec drupal7 drush dl drupal-7.x --destination=/var/www --drupal-project-rename=drupal7 -y
+    docker exec drupal7 drush dl drupal-7.x \
+      --destination=/var/www \
+      --drupal-project-rename=drupal7 -y
     
 Now set up your drupal site:
 
-    docker exec drupal7 /bin/sh -c 'cd /var/www/drupal7 && drush site-install standard -y \
+    docker exec drupal7 /bin/sh -c 'cd /var/www/drupal7 && drush \
+      site-install standard -y \
       --site-name=totallyawesome.com \
       --account-name=admin \
       --account-pass=admin_s3cret \
@@ -41,7 +46,7 @@ Now set up your drupal site:
 
 Then set up nginx to recognize `totallyawesome.com`:
 
-    docker exec drupal7 create-nginx-site totallyawesome.com www.totallyawesome.com totallyawesome.io
+    docker exec drupal7 create-nginx-site totallyawesome.com totallyawesome.io
 
 The first parameter is the main site name (mandatory). The rest specifies optional aliases.
 

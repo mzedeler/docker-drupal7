@@ -45,6 +45,12 @@ Then set up nginx to recognize `totallyawesome.com`:
 
 The first parameter is the main site name (mandatory). The rest specifies optional aliases.
 
+### Notes
+
+The drupal core must be installed in `/var/www/drupal7` - otherwise you'll break the utility scripts.
+
+All state for this container is stored in `/var/www/drupal7`, so mounting a data container (or host path) here is a very safe way of retaining the state in the event that the container is lost.
+
 ## Backup and restore
 
 The backups provided by this container contains more than what Drupals backup and migrate contains, because they also contain the site specific nginx configuration, settings, drupal core and all installed modules.

@@ -33,7 +33,11 @@ Then download the latest drupal core:
     
 Now set up your drupal site:
 
-    docker exec drupal7 /bin/sh -c 'cd /var/www/drupal7 && drush site-install standard -y --site-name=totallyawesome.com --account-name=admin --account-pass=admin_s3cret --db-url=mysql://drupal_login:drupal_password@mysql:3306/my_drupal_db'
+    docker exec drupal7 /bin/sh -c 'cd /var/www/drupal7 && drush site-install standard -y \
+      --site-name=totallyawesome.com \
+      --account-name=admin \
+      --account-pass=admin_s3cret \
+      --db-url=mysql://drupal_login:drupal_password@mysql:3306/my_drupal_db'
 
 Then set up nginx to recognize `totallyawesome.com`:
 

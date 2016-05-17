@@ -1,169 +1,69 @@
 # docker-drupal7
 
-Container for running Drupal7 based sites.
+Container for running Drupal7 based sites
 
+# Features
 
+ * Slim image based on Alpine Linux
+ * nginx, php-fpm and [custom configuration for Drupal](https://github.com/perusio/drupal-with-nginx)
+ * drush available as management tool
+ * Completely self contained backups
 
-Starting container
-====================================
+Management scripts:
 
+ * backup
+ * restore
+ * create-drupal-db
+ * create-nginx-site
 
-***Create a data volume container***
+# Usage
 
-See https://docs.docker.com/engine/userguide/containers/dockervolumes/
+## Starting a container
 
+    docker run -d --name mysql -e MYSQL_ROOT_PASSWORD=s3cret solfisk/mariadb-percona:latest
+    docker run -d --name drupal7 --link mysql solfisk/drupal7
 
-```
-	
-	# docker create -v /var/www --name drupal-data alpine:latest /bin/true
+After this, you need to set up a database for your drupal site:
 
-```
+    docker exec drupal7 create-drupal-db s3cret my_drupal_db drupal_login drupal_password
 
-***Including SSL, custom nginx configs***
+Then download the latest drupal core and set up drupal:
 
-Before building container, you can customize it, including your own nginx config
-files for your sites into `sites/available` directory, alongside with certificates
-into `ssl` directory.
+    docker exec drupal7 /bin/sh -c 'cd /var/www/drupal7 && drush site-install standard -y --site-name=totallyawesome.com --account-name=admin --account-pass=admin_s3cret --db-url=mysql://drupal_login:drupal_password@mysql:3306/my_drupal_db'
 
+Then set up nginx to recognize `totallyawesome.com`:
 
+    docker exec drupal7 create-site totallyawesome.com www.totallyawesome.com totallyawesome.io
 
-***Build current container***
+The first parameter is the main site name (mandatory). The rest specifies optional aliases.
 
-```
+## Backup and restore
 
-	# docker build -t solfisk/drupal7 .
+The backups provided by this container contains more than what Drupals backup and migrate contains, because they also contain the site specific nginx configuration, settings, drupal core and all installed modules.
 
-```
+To backup:
 
-***Now spin up the drupal7 container***
+    docker exec drupal7 backup > drupal7-backup.bin
 
-```
+To restore:
 
-	# docker run --volumes-from drupal-data -l mariadb-percona:mysql --name drupal7 solfisk/drupal7
+    docker exec drupal7 restore < drupal7-backup.bin
 
-```
+Use this in conjunction with `docker exec mysql backup` and `docker exec mysql restore` with the Solfisk mariadb-percona image to retain complete backups of the site.
 
-Verify, that container works - it have to show php_info on http://172.22.0.4/ and http://172.22.0.4/robots.txt
+# Credits
 
-This container has this:
+This image uses the [nginx configuration for Drupal](https://github.com/perusio/drupal-with-nginx) assembled by [António P. P. Almeida](https://github.com/perusio).
 
-- nginx running on 0.0.0.0:80, 0.0.0.0:443 ports
+The rest has been written by [Michael Zedeler](https://github.com/mzedeler) and [Anatolii Romanov](https://github.com/vodolaz095).
 
-- PHP-FPM running on 127.0.0.1:9000 port
+# Bugs
 
-- memcached running on 127.0.0.1:11211 port
+If you find a bug, you can either:
 
-- drupal files saved in `/var/www/localhost/htdocs`
+ * [Create an issue](https://github.com/Solfisk/docker-drupal7/issues) describing the symptoms (and if possible, identify the source of the bug and add it to the issue).
+ * Fix the bug and open a [pull request](https://github.com/Solfisk/docker-drupal7/pulls).
 
-- script to backup data
+# License
 
-- script to restore data
-
-- script to generate nginx site - config + directory for it
-
-
-***Backup data***
-
-```
-
-	# docker exec -ti drupal7 backup > /var/tmp/drupal7.backup
-
-```
-
-***Restore data***
-
-```
-
-	# cat /var/tmp/drupal7.backup | docker exec -ti drupal7 restore 
-
-```
-
-
-***Create new site***
-
-```
-
-	# docker exec -ti drupal7 createSite drupal7.local
-
-```
-
-It will create directory of `/var/ww/drupal7.local`, the corresponding config in `/etc/nginx/sites-available/drupal7.local`,
-enable it by means of symlinking it to `/etc/nginx/sites-enabled/drupal7.local`, than test and reload nginx config.
-
-
-
-***Download drupal core***
-
-Execute this script to download drupal-7 from official repo using drush into newly created directory for `drupal7.local`
-
-```
-
-	# docker exec -ti drupal7 drush dl --destination /var/www/drupal7.local drupal-7.x
-
-```
-
-***Set up a site***
-
-We can configure drupal using `drush` tool like this:
-
-````
-
- 	# docker exec -ti drupal7 cd /var/www/drupal7.local && drush site-install standard \
-	--site-name=drupal7.local \
-    --account-name=admin \
-    --account-pass=admin \
-    --db-url=mysql://admin:admin@mysql:3306/my-site
-
-````
-
-
-Database docker container
-=====================================
-
-
-We can run mysql database using this command:
-
-```shell
-
-    docker run --name mysql -e MYSQL_ROOT_PASSWORD=my-secret-pw -d solfisk/mariadb-percona:latest
-
-```
-
-Than we need to inspect it to get it's IP address on local network being bridged
-
-```
-
-    # docker inspect mysql
-
-```
-
-I have it running on `IPAddress": "172.17.0.2"`.
-
-Than we need to create database on this host.
-
-```
-
-    $ mysql_setpermission --host 172.17.0.2 -user root --password
-
-```
-
-You need to create user `admin` with password `admin` and database of name of `nota_dk` and grant 
-SELECT,INSERT,UPDATE,DELETE,CREATE,DROP,INDEX,ALTER permissions on it from any host.
-I used mysql workbench for doing this.
-
-
-Info
-====================================
-
-Start and link mysql container in private network
-
-https://docs.docker.com/engine/userguide/networking/work-with-networks/#linking-containers-in-user-defined-networks
-
-Start and link drupal container in private network
-
-
-
-docker -t docker-drupal7 build .
-
-
-
+See the [license](LICENSE).

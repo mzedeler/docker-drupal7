@@ -27,7 +27,11 @@ After this, you need to set up a database for your drupal site:
 
     docker exec drupal7 create-drupal-db s3cret my_drupal_db drupal_login drupal_password
 
-Then download the latest drupal core and set up drupal:
+Then download the latest drupal core:
+
+    docker exec drupal7 drush dl drupal-7.x --destination=/var/www --drupal-project-rename=drupal7 -y
+    
+Now set up your drupal site:
 
     docker exec drupal7 /bin/sh -c 'cd /var/www/drupal7 && drush site-install standard -y --site-name=totallyawesome.com --account-name=admin --account-pass=admin_s3cret --db-url=mysql://drupal_login:drupal_password@mysql:3306/my_drupal_db'
 

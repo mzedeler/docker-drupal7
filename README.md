@@ -41,7 +41,7 @@ Now set up your drupal site:
 
 Then set up nginx to recognize `totallyawesome.com`:
 
-    docker exec drupal7 create-site totallyawesome.com www.totallyawesome.com totallyawesome.io
+    docker exec drupal7 create-nginx-site totallyawesome.com www.totallyawesome.com totallyawesome.io
 
 The first parameter is the main site name (mandatory). The rest specifies optional aliases.
 
